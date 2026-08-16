@@ -1,0 +1,6 @@
+{
+    "project":"demo",
+    "bugs":[{"id":1,"module":"登录","status":"失败"},
+    {"id":2,"module":"支付","status":"成功"},
+    {"id":3,"module":"搜索","status":"失败"}]
+}
