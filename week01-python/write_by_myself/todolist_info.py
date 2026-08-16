@@ -10,6 +10,7 @@ from todolist_def import read_file
 
 
 def main():
+    # 先同步数据，然后判断了非json文件、合法数据、没有文件的情况
     data = read_file()
     if data is False:
         print("非json文件，请确认格式")
