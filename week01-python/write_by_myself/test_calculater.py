@@ -6,22 +6,45 @@
 from calculater import calculate
 
 
-def check(name, got, expected):
-    if got != expected:
-        raise AssertionError(f"[{name}] 期望 {expected!r}，实际 {got!r}")
-    print(f"OK  {name}")
+# def check(name, got, expected):
+#     if got != expected:
+#         raise AssertionError(f"[{name}] 期望 {expected!r}，实际 {got!r}")
+#     print(f"OK  {name}")
 
 
-# --- 正常四则 ---
-check("加", calculate(8, "+", 2), 10)
-check("减", calculate(8, "-", 2), 6)
-check("乘", calculate(8, "*", 2), 16)
-check("除", calculate(8, "/", 2), 4.0)
+# # --- 正常四则 ---
+# check("加", calculate(8, "+", 2), 10)
+# check("减", calculate(8, "-", 2), 6)
+# check("乘", calculate(8, "*", 2), 16)
+# check("除", calculate(8, "/", 2), 4.0)
 
-# --- 边界 ---
-check("除零", calculate(8, "/", 0), None)
-check("非法运算符", calculate(8, "^", 2), None)
-check("小数", calculate(0.1, "+", 0.2), 0.1 + 0.2)  # float 本身的精度行为
-check("负数", calculate(-3, "*", 2), -6)
+# # --- 边界 ---
+# check("除零", calculate(8, "/", 0), None)
+# check("非法运算符", calculate(8, "^", 2), None)
+# check("小数", calculate(0.1, "+", 0.2), 0.1 + 0.2)  # float 本身的精度行为
+# check("负数", calculate(-3, "*", 2), -6)
 
-print("全部通过")
+# print("全部通过")
+def test_add():
+    assert calculate(8,'+',2) == 10
+
+def test_sub():
+    assert calculate(8,'-',2) == 6
+
+def test_mul():
+    assert calculate(3,'*',5) == 15
+
+def test_div():
+    assert calculate(8,'/',4) == 2
+
+def test_div_zero():
+    assert calculate(8,'/',0) is None
+
+def test_add_zero():
+    assert calculate(6,'+',0) == 6
+
+def test_mul_zero():
+    assert calculate(6,'*',0) == 0
+
+def test_ill():
+    assert calculate(8,'&',2) is None
