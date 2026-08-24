@@ -27,5 +27,6 @@ def create_todo(item:TodoIn):
     add_todo(todos,item.text)
     ok = write_file(todos)
     if not ok:
+        # raise 触发异常
         raise HTTPException(status_code=500, detail="写入失败")
     return todos
