@@ -1,7 +1,7 @@
 from fastapi import FastAPI
-from todolist_def import add_todo, list_todos, write_file, read_file, update_todo, delete_todo
 from pydantic import BaseModel
 from fastapi import HTTPException
+from db_todos import init_db, insert_todo, update_todo, select_todos, delete_todo
 
 
 app = FastAPI()
@@ -9,14 +9,12 @@ app = FastAPI()
 def hello():
     return {"message":"ok"}
 
-
-data = read_file()
-
-todos = data if isinstance(data,list) else []
+# 初始化
+init_db()
 
 @app.get("/todos")
 def get_todos():
-    return list_todos(todos)
+    return select_todos()
 # 继承的写法
 class TodoIn(BaseModel):
     text:str
@@ -29,29 +27,22 @@ class TodoDelete(BaseModel):
 @app.post("/todos")
 # 定义一个函数 create_todo，它接收一个叫 item 的参数，并且这个参数预期是 TodoIn 类型。
 def create_todo(item:TodoIn):
-    add_todo(todos,item.text)
-    ok = write_file(todos)
+    ok = insert_todo(item.text)
     if not ok:
         # raise 触发异常
         raise HTTPException(status_code=500, detail="写入失败")
-    return todos
+    return True
 
 @app.post("/update_todos")
 def update_lists(item:TodoUpdate):
-    result = update_todo(todos,item.n,item.text)
-    if result is False:
+    result = update_todo(item.text, item.n)
+    if result == 0:
         raise HTTPException(status_code=400, detail="序号不存在")
-    ok = write_file(todos)
-    if not ok:
-        raise HTTPException(status_code=500, detail="修改失败")
-    return todos
+    return True
 
 @app.post("/delete_todos")
 def delete_lists(item:TodoDelete):
-    result = delete_todo(todos,item.n)
-    if result is False:
+    result = delete_todo(item.n)
+    if result == 0:
         raise HTTPException(status_code=400, detail="序号不存在")
-    ok = write_file(todos)
-    if not ok:
-        raise HTTPException(status_code=500, detail="删除失败")
-    return todos
+    return True
