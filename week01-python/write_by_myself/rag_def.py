@@ -71,5 +71,5 @@ def prompt_demo(list, question):
     prompt = '只根据下面资料回答，不要编资料里没有的内容。\n'
     for i,(score,text) in enumerate(list,start=1):
         prompt += f'\n【资料{i}】\n{text}\n'
-    prompt += '\n问题：' + question
+    prompt += '\n问题：' + question + '答完要写用了【资料几】'
     return prompt
