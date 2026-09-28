@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi import HTTPException
 from db_todos import init_db, insert_todo, update_todo, select_todos, delete_todo
+from chat_def import chat
 
 
 app = FastAPI()
@@ -23,6 +24,8 @@ class TodoUpdate(BaseModel):
     text:str
 class TodoDelete(BaseModel):
     n:int
+class ChatAI(BaseModel):
+    text:str
 
 @app.post("/todos")
 # 定义一个函数 create_todo，它接收一个叫 item 的参数，并且这个参数预期是 TodoIn 类型。
@@ -46,3 +49,10 @@ def delete_lists(item:TodoDelete):
     if result == 0:
         raise HTTPException(status_code=400, detail="序号不存在")
     return True
+
+@app.post("/chat")
+def chat_ai(item:ChatAI):
+    reply = chat(item.text)    
+    if reply is False:
+        raise HTTPException(status_code=500, detail="请设置环境变量")
+    return {"reply":reply}
