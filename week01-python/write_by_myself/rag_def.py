@@ -25,23 +25,33 @@ def split_by_blank_line(text):
 def clean_chunks(chunks,min_len = 30):
     merged = []
     pending = ''
+    # 标题是否已经贴到过长段上。写在循环外面，避免每读一段就被重置成 False
+    used = False
     for chunk in chunks:
         chunk = chunk.strip()
-     # 如果 i 为空、为 0、为 None、为 False，就执行
+        # 空段：丢掉
         if not chunk:
              continue
-         # 清理---     
+        # 分隔线（如 ---）：丢掉，不当成标题
         if re.fullmatch(r'[-/*_]+', re.sub(r'\s+', '', chunk)):
               continue
+        # 短标题：还没贴过长段就叠加上去；已经贴过就换掉旧标题
         if len(chunk) < min_len:
-              pending += chunk + "\n" 
+              if used == False:
+                   pending += chunk + "\n" 
+              else:
+                   pending = chunk + "\n"
+                   used = False 
               continue
+        # 长段：有标题就拼在前面，不要清空 pending，拼完把 used 改成 True
         if len(chunk) >= min_len:
               if pending:
                   chunk = pending + chunk
-                  pending = ''
+                  used = True
+                #   pending = ''
               merged.append(chunk)
-    if pending:
+    # 循环结束时，还没贴出去的短标题单独收进来
+    if pending and not used:
         merged.append(pending)
          
     return merged
@@ -56,6 +66,10 @@ def search_chunks(chunks, questions, top_n = 3):
     keep_chinese = re.sub(r'[^\u4e00-\u9fa5]', '', questions)
     # 生成所有相邻二字组
     nearby_two = [keep_chinese[i:i+2] for i in range(len(keep_chinese)-1)]
+    remove_values = ['林冲','冲的']
+    for i in remove_values:
+        while i in nearby_two:
+            nearby_two.remove(i)
     collection = []
     for chunk in chunks:
         score = 0
