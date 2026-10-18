@@ -1,4 +1,5 @@
 import re
+import math
 
 # 读文档函数
 def read_chunks_file(file_path):
@@ -62,22 +63,48 @@ def clean_chunks(chunks,min_len = 30):
 
 # 检索_关键词重叠
 def search_chunks(chunks, questions, top_n = 3):
+    collection = []
+    questions_dict = text_to_dict(questions)
+    for chunk in chunks:
+        chunks_dict = text_to_dict(chunk)
+        sim = cosine_similarity(questions_dict, chunks_dict)
+        collection.append((sim, chunk))       
+    return sorted(collection, key=lambda x: x[0],reverse=True)[:top_n]
+
+
+# 一段文字变成字典
+def text_to_dict(text):
     # 保留中文
-    keep_chinese = re.sub(r'[^\u4e00-\u9fa5]', '', questions)
+    keep_chinese = re.sub(r'[^\u4e00-\u9fa5]', '', text)
     # 生成所有相邻二字组
     nearby_two = [keep_chinese[i:i+2] for i in range(len(keep_chinese)-1)]
-    remove_values = ['林冲','冲的']
-    for i in remove_values:
-        while i in nearby_two:
-            nearby_two.remove(i)
-    collection = []
-    for chunk in chunks:
-        score = 0
-        for two in nearby_two:
-            if two in chunk:
-                score += 1
-        collection.append((score, chunk))       
-    return sorted(collection, key=lambda x: x[0],reverse=True)[:top_n]
+    # 统计次数的字典
+    new_nearby_two = {}
+    for key in nearby_two:
+        new_nearby_two[key] = new_nearby_two.get(key, 0) + 1
+    # 返回带统计结果的字典
+    return new_nearby_two
+
+# 相似度
+def cosine_similarity(question_dict, chunk_dict):
+    # 先判断空字典的情况
+    if not question_dict or not chunk_dict:
+        return 0
+    mol = 0
+    den_before_sqrt_a = 0
+    den_before_sqrt_b = 0
+    for key in question_dict:
+        if key in chunk_dict:
+            mol += question_dict[key] * chunk_dict[key]
+    for value in question_dict.values():
+        den_before_sqrt_a += value*value
+        den_a = math.sqrt(den_before_sqrt_a)
+    for value in chunk_dict.values():
+        den_before_sqrt_b += value*value
+        den_b = math.sqrt(den_before_sqrt_b)
+    den = den_a * den_b
+    return mol / den
+
 
 
 # 提示词demo
