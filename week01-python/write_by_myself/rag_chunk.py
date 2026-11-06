@@ -24,8 +24,8 @@ def main():
     # for i,c in enumerate(chunks):
     #     print(f"chunk{i + 1}|len={len(c)}")
     #     print(c[:15])
-    key_words_score = search_chunks(chunks,"林冲的结局？",top_n=3)
-    prompt_test = prompt_demo(key_words_score, '林冲的结局？')
+    key_words_score = search_chunks(chunks,"林冲的性格？",top_n=3)
+    prompt_test = prompt_demo(key_words_score, '林冲的性格？')
     answer_test = chat(prompt_test)
     print(answer_test)
 
