@@ -26,8 +26,8 @@ def main():
     #     print(c[:15])
     key_words_score = search_chunks(chunks,"林冲的结局？",top_n=3)
     prompt_test = prompt_demo(key_words_score, '林冲的结局？')
-    answer_test = chat(prompt_test)
-    print(answer_test)
+    # answer_test = chat(prompt_test)
+    print(prompt_test)
 
 if __name__ == "__main__":
     main()

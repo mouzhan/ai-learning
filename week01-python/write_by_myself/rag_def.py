@@ -1,5 +1,6 @@
 import re
 import math
+from sentence_transformers import SentenceTransformer
 
 # 读文档函数
 def read_chunks_file(file_path):
@@ -13,13 +14,10 @@ def read_chunks_file(file_path):
              return False
 
 
-
 # 按照空行切
 def split_by_blank_line(text):
     paragraphs = re.split(r'\n\s*\n',text)
     return [p.strip() for p in paragraphs if p.strip()]
-
-
 
 
 # 清洗垃圾段
@@ -58,78 +56,60 @@ def clean_chunks(chunks,min_len = 30):
     return merged
 
          
-
-
-
 # 检索：余弦 + 少见二字加权，返回前 top_n 个 (分数, 正文)
 def search_chunks(chunks, questions, top_n = 3):
     collection = []
-    # 问题只转一次字典
-    questions_dict = text_to_dict(questions)
-    # 权重表只算一次，后面每段共用
-    weights = bigram_weights(chunks)
+    question_embedding = text_to_embedding(questions)
     for chunk in chunks:
-        chunks_dict = text_to_dict(chunk)
-        sim = cosine_similarity(questions_dict, chunks_dict, weights)
+        chunk_embedding = text_to_embedding(chunk)
+        sim = cosine_similarity(question_embedding, chunk_embedding)
         collection.append((sim, chunk))
     # 分数从高到低排，取前几名
     return sorted(collection, key=lambda x: x[0],reverse=True)[:top_n]
 
 
-# 每个二字出现在几段里 → 权重 = 总段数 / 段数。越少见越大
-def bigram_weights(chunks):
-    # 每个二字出现在多少段里
-    df = {}
-    for chunk in chunks:
-        keys = text_to_dict(chunk)
-        # 这段里出现过的二字，段数加 1；同一段里出现多次也只加一次
-        for key in keys:
-            df[key] = df.get(key, 0) + 1
-    total = len(chunks)
-    weights = {}
-    for key, count in df.items():
-        # 例：30 段里 2 段有「结局」→ 权重 15；几乎每段都有「林冲」→ 权重约 1
-        weights[key] = total / count
-    return weights
+# 每个二字出现在几段里 → 权重 = 总段数 / 段数。越少见越大（改为向量之后已经包含，用不上了）
+# def bigram_weights(chunks):
+#     # 每个二字出现在多少段里
+#     df = {}
+#     for chunk in chunks:
+#         keys = text_to_dict(chunk)
+#         # 这段里出现过的二字，段数加 1；同一段里出现多次也只加一次
+#         for key in keys:
+#             df[key] = df.get(key, 0) + 1
+#     total = len(chunks)
+#     weights = {}
+#     for key, count in df.items():
+#         # 例：30 段里 2 段有「结局」→ 权重 15；几乎每段都有「林冲」→ 权重约 1
+#         weights[key] = total / count
+#     return weights
+
+# 加载模型
+model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
 
 
-# 一段文字变成字典
-def text_to_dict(text):
-    # 保留中文
-    keep_chinese = re.sub(r'[^\u4e00-\u9fa5]', '', text)
-    # 生成所有相邻二字组
-    nearby_two = [keep_chinese[i:i+2] for i in range(len(keep_chinese)-1)]
-    # 统计次数的字典
-    new_nearby_two = {}
-    for key in nearby_two:
-        new_nearby_two[key] = new_nearby_two.get(key, 0) + 1
-    # 返回带统计结果的字典
-    return new_nearby_two
+# 一段文字变成向量
+def text_to_embedding(text):
+    # 把文本编码成向量
+    vector = model.encode(text)
+    return vector
+
 
 # 相似度：比较问题和某一段各自的二字次数字典，返回小数
-def cosine_similarity(question_dict, chunk_dict, weights=None):
-    # 空字典：没法比，直接 0，避免后面除以 0
-    if not question_dict or not chunk_dict:
-        return 0
-    # 没传权重表时当全部是 1，和以前的纯余弦一样
-    if weights is None:
-        weights = {}
+def cosine_similarity(question_embedding, chunk_embedding):
     # 三个累加量先写成 0，第一次 += 才有旧值可读
     mol = 0
     den_before_sqrt_a = 0
     den_before_sqrt_b = 0
-    # 分子：两边都有的二字，次数相乘，再乘少见程度
-    for key in question_dict:
-        if key in chunk_dict:
-            # 表里没有这个二字时权重当 1，避免 KeyError
-            weight = weights.get(key, 1)
-            mol += question_dict[key] * chunk_dict[key] * weight
-    # 分母左边：问题字典里每个次数平方、加总、开平方
-    for value in question_dict.values():
+    # 分子
+    for i in range(len(question_embedding)):
+        mol += question_embedding[i] * chunk_embedding[i]
+    # 分母左边
+    for value in question_embedding:
         den_before_sqrt_a += value*value
         den_a = math.sqrt(den_before_sqrt_a)
-    # 分母右边：这段字典同样做一遍，只出现在这段里的二字也要算进去
-    for value in chunk_dict.values():
+    # 分母右边
+    for value in chunk_embedding:
         den_before_sqrt_b += value*value
         den_b = math.sqrt(den_before_sqrt_b)
     # 分母是两边长度相乘；相似度 = 分子 / 分母
